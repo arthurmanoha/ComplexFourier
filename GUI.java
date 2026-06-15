@@ -26,25 +26,23 @@ public class GUI extends JFrame {// implements MouseListener {
         this.setLayout(new BorderLayout());
 
         JPanel buttonsPanel = new JPanel();
-        JButton startButton = new JButton("start");
+        JButton startButton = new JButton("Restart");
         startButton.addActionListener((e) -> {
-            System.out.println("start");
-            panel.start();
+            System.out.println("restart");
+            panel.restart();
         });
         buttonsPanel.add(startButton);
 
         JPanel coefficientsPanel = new JPanel();
-        coefficientsPanel.setLayout(new GridLayout(8, 10));
+        coefficientsPanel.setLayout(new GridLayout(0, 2));
         coefficientsPanel.add(new JLabel("x"));
         coefficientsPanel.add(new JLabel("y"));
-        coefficientsPanel.add(new CustomTextField(panel));
-        coefficientsPanel.add(new CustomTextField(panel));
-        coefficientsPanel.add(new CustomTextField(panel));
-        coefficientsPanel.add(new CustomTextField(panel));
-        coefficientsPanel.add(new CustomTextField(panel));
-        coefficientsPanel.add(new CustomTextField(panel));
-        coefficientsPanel.add(new CustomTextField(panel));
-        coefficientsPanel.add(new CustomTextField(panel));
+
+        int nbRows = 10;
+        for (int rank = 0; rank < 2 * nbRows; rank++) {
+            coefficientsPanel.add(new CustomTextField(panel));
+        }
+
         JSlider slider = new JSlider(JSlider.HORIZONTAL, 0, 100, 0);
         slider.addChangeListener(new ChangeListener() {
             @Override

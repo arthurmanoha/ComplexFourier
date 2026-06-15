@@ -88,8 +88,10 @@ public class GraphicPanel extends JPanel implements MouseListener {
     public void mouseExited(MouseEvent e) {
     }
 
-    // Compute the Fourier coefficients and draw the curve with circles
-    public void start() {
+    // Wipe the values computed by the tower
+    public void restart() {
+        tower.wipe();
+        repaint();
     }
 
     public void receiveText(String text, int index) {

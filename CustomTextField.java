@@ -46,7 +46,7 @@ public class CustomTextField extends JTextField {
             }
         });
         if (id % 2 == 0) {
-            setText("30");
+            setText("" + (250 / (id + 1)));
         }
     }
 }

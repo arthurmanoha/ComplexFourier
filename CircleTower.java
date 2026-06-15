@@ -4,6 +4,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.util.ArrayList;
 
 /**
@@ -20,6 +21,8 @@ public class CircleTower {
 
     private double time;
 
+    private ArrayList<Point> results;
+
     public CircleTower() {
         int initSize = 10;
         xTab = new ArrayList<>(initSize);
@@ -33,6 +36,7 @@ public class CircleTower {
             angles.add(new Double(0));
         }
         time = 0;
+        results = new ArrayList<>();
     }
 
     public void updateCoefficient(int circleIndex, boolean isRealPart, double value) {
@@ -60,29 +64,52 @@ public class CircleTower {
         int height = g.getClipBounds().height;
         int xAppPrev = width / 2;
         int yAppPrev = height / 2;
-        int xApp, yApp;
+        int xApp = 0;
+        int yApp = 0;
 
         for (int frequency = 0; frequency < radii.size(); frequency++) {
             double radius = radii.get(frequency);
             double startAngle = angles.get(frequency);
 
-            double currentAngle = startAngle + frequency * time * 2 * Math.PI;
-            xApp = (int) (xAppPrev + radius * Math.cos(currentAngle));
-            yApp = (int) (yAppPrev + radius * Math.sin(currentAngle));
             if (frequency % 2 == 0) {
                 g.setColor(Color.red);
             } else {
                 g.setColor(Color.blue);
             }
+
+            // Draw the full circle
+            int xAppCircle = (int) (xAppPrev - radius);
+            int yAppCircle = (int) (yAppPrev - radius);
+            g.drawOval(xAppCircle, yAppCircle, (int) radius * 2, (int) radius * 2);
+
+            // Draw a radius of the circle
+            double currentAngle = startAngle + frequency * time * 2 * Math.PI;
+            xApp = (int) (xAppPrev + radius * Math.cos(currentAngle));
+            yApp = (int) (yAppPrev + radius * Math.sin(currentAngle));
             g.drawLine(xAppPrev, yAppPrev, xApp, yApp);
 
             xAppPrev = xApp;
             yAppPrev = yApp;
         }
+        results.add(new Point(xApp, yApp));
+
+        // Draw the full curve
+        g.setColor(Color.blue);
+        Point prev = null;
+        for (Point p : results) {
+            if (prev != null) {
+                g.drawLine(prev.x, prev.y, p.x, p.y);
+            }
+            prev = p;
+        }
     }
 
     public void setTime(double value) {
         this.time = value;
+    }
+
+    public void wipe() {
+        results.clear();
     }
 
 }
