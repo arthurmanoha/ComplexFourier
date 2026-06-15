@@ -25,7 +25,6 @@ public class CustomTextField extends JTextField {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 updatePanel(e);
-                System.out.println("update");
             }
 
             @Override
@@ -46,5 +45,8 @@ public class CustomTextField extends JTextField {
                 }
             }
         });
+        if (id % 2 == 0) {
+            setText("30");
+        }
     }
 }

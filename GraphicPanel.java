@@ -93,8 +93,8 @@ public class GraphicPanel extends JPanel implements MouseListener {
     }
 
     public void receiveText(String text, int index) {
-        int circleIndex = index % 4;
-        boolean isRealPart = (index < 4);
+        int circleIndex = index / 2;
+        boolean isRealPart = (index % 2 == 0);
         double value = Double.valueOf(text);
         tower.updateCoefficient(circleIndex, isRealPart, value);
         repaint();

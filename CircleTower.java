@@ -49,7 +49,6 @@ public class CircleTower {
 
         radii.set(circleIndex, newRadius);
         angles.set(circleIndex, newAngle);
-        System.out.println("new radius: " + newRadius + ", new angle; " + newAngle);
     }
 
     public void paint(Graphics g) {
@@ -67,7 +66,7 @@ public class CircleTower {
             double radius = radii.get(frequency);
             double startAngle = angles.get(frequency);
 
-            double currentAngle = startAngle + frequency * time;
+            double currentAngle = startAngle + frequency * time * 2 * Math.PI;
             xApp = (int) (xAppPrev + radius * Math.cos(currentAngle));
             yApp = (int) (yAppPrev + radius * Math.sin(currentAngle));
             if (frequency % 2 == 0) {
