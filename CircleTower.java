@@ -56,19 +56,21 @@ public class CircleTower {
     }
 
     public void paint(Graphics g) {
+        paint(g, 0, 0, 1);
+    }
+
+    public void paint(Graphics g, int x0, int y0, double zoom) {
         Graphics2D g2 = (Graphics2D) g;
 
         g2.setStroke(new BasicStroke(3));
 
-        int width = g.getClipBounds().width;
-        int height = g.getClipBounds().height;
-        int xAppPrev = width / 2;
-        int yAppPrev = height / 2;
+        int xAppPrev = x0;
+        int yAppPrev = y0;
         int xApp = 0;
         int yApp = 0;
 
         for (int frequency = 0; frequency < radii.size(); frequency++) {
-            double radius = radii.get(frequency);
+            double radius = radii.get(frequency) * zoom;
             double startAngle = angles.get(frequency);
 
             if (frequency % 2 == 0) {
@@ -94,7 +96,7 @@ public class CircleTower {
         results.add(new Point(xApp, yApp));
 
         // Draw the full curve
-        g.setColor(Color.blue);
+        g.setColor(Color.yellow);
         Point prev = null;
         for (Point p : results) {
             if (prev != null) {
