@@ -24,17 +24,17 @@ public class CustomTextField extends JTextField {
         this.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                updatePanel(e);
+//                updatePanel(e);
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                updatePanel(e);
+//                updatePanel(e);
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                updatePanel(e);
+//                updatePanel(e);
             }
 
             private void updatePanel(DocumentEvent e) {
@@ -46,7 +46,7 @@ public class CustomTextField extends JTextField {
             }
         });
         if (id % 2 == 0) {
-            setText("" + (250 / (id + 1)));
+            setText("0");
         }
     }
 }

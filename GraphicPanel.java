@@ -4,11 +4,20 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.geom.Point2D;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import javax.swing.JPanel;
 
@@ -18,7 +27,7 @@ import javax.swing.JPanel;
  */
 public class GraphicPanel extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener {
 
-    private ArrayList<Point> points;
+    private ArrayList<Point2D> userDefinedPoints;
     int width, height;
     private CircleTower tower;
 
@@ -27,23 +36,52 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
     private boolean isMouseWheelPressed;
     private int xMouse, yMouse;
 
+    private String filename = "saved_points.txt";
+
     public GraphicPanel() {
+        this(null);
+    }
+
+    public GraphicPanel(CircleTower newTower) {
         super();
 
-        width = 900;
-        height = 400;
+        width = 1000;
+        height = 750;
 
         setPreferredSize(new Dimension(width, height));
-        points = new ArrayList<>();
+        userDefinedPoints = new ArrayList<>();
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
         this.addMouseWheelListener(this);
-        tower = new CircleTower();
-
-        x0 = width / 2;
-        y0 = height / 2;
-        zoom = .8;
+        tower = newTower;
+        resetView();
         isMouseWheelPressed = false;
+    }
+
+    protected void savePoints() throws IOException {
+        File f = new File(filename);
+        FileWriter writer = new FileWriter(f);
+        for (Point2D p : userDefinedPoints) {
+            writer.write(p.getX() + " " + p.getY() + "\n");
+        }
+        writer.close();
+    }
+
+    protected void loadPoints() throws FileNotFoundException, IOException {
+        userDefinedPoints.clear();
+        BufferedReader reader = new BufferedReader(new FileReader(filename));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] words = line.split(" ");
+            double newX = new Double(words[0]);
+            double newY = new Double(words[1]);
+            userDefinedPoints.add(new Point2D.Double(newX, newY));
+        }
+        repaint();
+    }
+
+    public void setCircleTower(CircleTower newTower) {
+        this.tower = newTower;
     }
 
     @Override
@@ -57,27 +95,49 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
         g.setColor(Color.black);
         g.drawLine(0, y0, g.getClipBounds().width, y0);
         g.drawLine(x0, 0, x0, g.getClipBounds().height);
+        // Draw values on axes
+        for (int i = -100; i < 100; i++) {
+            g.drawString(i + "", (int) (x0 + i * zoom), y0); // x
+            g.drawString(i + "", x0, (int) (y0 - i * zoom)); // y
+        }
+
+        // Draw grid
+        for (int row = -30; row <= 30; row++) {
+            for (int col = -30; col <= 30; col++) {
+                g.drawRect((int) (x0 + col * zoom), (int) (y0 - row * zoom),
+                        2, 2);
+            }
+        }
 
         // Draw user-defined points
         g.setColor(Color.red);
         int radius = 5;
-        Point prev = null;
-        for (Point p : points) {
+        Point2D prev = null;
+        int userPointIndex = 0;
+        for (Point2D p : userDefinedPoints) {
             g.setColor(Color.red);
-            g.fillOval((int) (x0 + p.x * zoom - radius), (int) (y0 - p.y * zoom - radius), 2 * radius, 2 * radius);
+            g.fillOval((int) (x0 + p.getX() * zoom - radius), (int) (y0 - p.getY() * zoom - radius), 2 * radius, 2 * radius);
             if (prev != null) {
                 g.setColor(Color.black);
-                g.drawLine((int) (x0 + p.x * zoom), (int) (y0 - p.y * zoom),
-                        (int) (x0 + prev.x * zoom), (int) (y0 - prev.y * zoom));
+                g.drawLine((int) (x0 + p.getX() * zoom), (int) (y0 - p.getY() * zoom),
+                        (int) (x0 + prev.getX() * zoom), (int) (y0 - prev.getY() * zoom));
             }
+            g.drawString("P" + userPointIndex,
+                    (int) (x0 + p.getX() * zoom),
+                    (int) (y0 - p.getY() * zoom));
             prev = p;
+            userPointIndex++;
         }
         tower.paint(g, x0, y0, zoom);
     }
 
     public void receiveClick(double xClick, double yClick) {
-        points.add(new Point((int) xClick, (int) yClick));
+        userDefinedPoints.add(new Point2D.Double(xClick, yClick));
         repaint();
+    }
+
+    public int getNbPoints() {
+        return userDefinedPoints.size();
     }
 
     @Override
@@ -127,7 +187,7 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
 
             xMouse = e.getX();
             yMouse = e.getY();
-            tower.wipe();
+            tower.drag(dx, dy);
 
             repaint();
         }
@@ -150,6 +210,7 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
         x0 = (int) (zF * (x0 - xMouse) + xMouse);
         y0 = (int) (zF * (y0 - yMouse) + yMouse);
         zoom = zoom * zF;
+        tower.wipe();
         repaint();
     }
 
@@ -160,6 +221,7 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
     }
 
     public void receiveText(String text, int index) {
+        System.out.println("panel receiving text <" + text + "> and index " + index);
         int circleIndex = index / 2;
         boolean isRealPart = (index % 2 == 0);
         double value = Double.valueOf(text);
@@ -169,6 +231,18 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
 
     public void setTime(double value) {
         tower.setTime(value);
+        repaint();
+    }
+
+    public void compute() {
+        tower.computeCoefficients(userDefinedPoints);
+        repaint();
+    }
+
+    public void resetView() {
+        x0 = width / 2;
+        y0 = height / 2;
+        zoom = 50;
         repaint();
     }
 }
