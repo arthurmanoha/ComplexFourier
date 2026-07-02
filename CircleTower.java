@@ -57,20 +57,16 @@ public class CircleTower {
     }
 
     public void paint(Graphics g, int x0, int y0, double zoom) {
-        System.out.println("*******************************************");
-        System.out.println("***               PAINT                 ***");
-        System.out.println("*******************************************");
         Graphics2D g2 = (Graphics2D) g;
 
         g2.setStroke(new BasicStroke(3));
 
-        int xPointPrev = x0;
-        int yPointPrev = y0;
-        int xPoint = 0;
-        int yPoint = 0;
+        double xPointPrev = x0;
+        double yPointPrev = y0;
+        double xPoint = 0;
+        double yPoint = 0;
 
         int nbSteps = complexValues.size();
-        System.out.println("    TOTAL " + (nbSteps / 2 + 1) + " points.");
         for (int step = 0; step <= nbSteps / 2; step++) {
             try {
 
@@ -81,8 +77,6 @@ public class CircleTower {
                 double radiusApp = number.getRadius() * zoom;
                 double startAngle = number.getArgument();
 
-//                System.out.println("step = " + step + ", rank = " + rank + ", freq = " + frequency
-//                        + ", radius = " + number.getRadius() + ", angle: " + (number.getArgument() / PI) + " pi");
                 if (frequency > 0) {
                     g.setColor(Color.red);
                 } else if (frequency < 0) {
@@ -97,27 +91,24 @@ public class CircleTower {
 //            g.drawOval(xAppCircle, yAppCircle, (int) radius * 2, (int) radius * 2);
                 // Draw a radius of the circle
                 double currentAngle = startAngle + frequency * time * 2 * Math.PI;
-                xPoint = xPointPrev + (int) (radiusApp * Math.cos(currentAngle));
-                yPoint = yPointPrev - (int) (radiusApp * Math.sin(currentAngle));
+                xPoint = xPointPrev + (radiusApp * Math.cos(currentAngle));
+                yPoint = yPointPrev - (radiusApp * Math.sin(currentAngle));
                 if (radiusApp > 0.01) {
-//                System.out.println("Angle: " + currentAngle + ". Drawing line from (" + xPointPrev + ", " + yPointPrev
-//                        + ") to (" + xPoint + ", " + yPoint + ");");
                 }
-                g.drawLine(xPointPrev, yPointPrev, xPoint, yPoint);
-                g.drawString("f=" + frequency, (xPointPrev + xPoint) / 2, (yPointPrev + yPoint) / 2);
+                g.drawLine((int) xPointPrev, (int) yPointPrev, (int) xPoint, (int) yPoint);
+                g.drawString("f=" + frequency, (int) (xPointPrev + xPoint) / 2, (int) (yPointPrev + yPoint) / 2);
 
                 g.setColor(Color.black);
                 int radius = 5;
-                g.fillOval(xPoint - radius, yPoint - radius, 2 * radius, 2 * radius);
+                g.fillOval((int) (xPoint - radius), (int) (yPoint - radius), 2 * radius, 2 * radius);
 
                 xPointPrev = xPoint;
                 yPointPrev = yPoint;
-//                System.out.println("painted step = " + step + ", rank = " + rank + ", freq: " + frequency);
             } catch (IndexOutOfBoundsException e) {
                 System.out.println("                                Not enough points for step = " + step);
             }
         }
-        reconstructedPoints.add(new Point(xPoint, yPoint));
+        reconstructedPoints.add(new Point((int) xPoint, (int) yPoint));
 
         // Draw the full curve
         g.setColor(Color.yellow);
