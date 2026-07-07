@@ -73,6 +73,28 @@ public class GUI extends JFrame implements CustomListener {
         buttonsPanel.add(savePointsButton);
         buttonsPanel.add(loadPointsButton);
 
+        JButton drawButton = new JButton("Draw");
+        drawButton.addActionListener((e) -> {
+            panel.setMode(GraphicPanel.GraphicPanelMode.DRAW);
+        });
+        buttonsPanel.add(drawButton);
+        JButton selectButton = new JButton("Select");
+        selectButton.addActionListener((e) -> {
+            panel.setMode(GraphicPanel.GraphicPanelMode.SELECT);
+        });
+        buttonsPanel.add(selectButton);
+        JButton subdivideButton = new JButton("Subdivide");
+        subdivideButton.addActionListener((e) -> {
+            panel.subdivideSelected();
+        });
+        buttonsPanel.add(subdivideButton);
+        JButton deleteButton = new JButton("Delete");
+        deleteButton.addActionListener((e) -> {
+            panel.deleteSelected();
+            panel.repaint();
+        });
+        buttonsPanel.add(deleteButton);
+
         topPanel.add(buttonsPanel, BorderLayout.NORTH);
 
         JPanel sliderPanel = new JPanel();
