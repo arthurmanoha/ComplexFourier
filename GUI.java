@@ -83,6 +83,11 @@ public class GUI extends JFrame implements CustomListener {
             panel.setMode(GraphicPanel.GraphicPanelMode.SELECT);
         });
         buttonsPanel.add(selectButton);
+        JButton subdivideButton = new JButton("Subdivide");
+        subdivideButton.addActionListener((e) -> {
+            panel.subdivideSelected();
+        });
+        buttonsPanel.add(subdivideButton);
         JButton deleteButton = new JButton("Delete");
         deleteButton.addActionListener((e) -> {
             panel.deleteSelected();

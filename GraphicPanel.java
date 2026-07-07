@@ -358,4 +358,41 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
             selectionFlags.set(index, false);
         }
     }
+
+    // Subdivide every segment made of two selected points.
+    protected void subdivideSelected() {
+
+        ArrayList<Point2D> newPoints = new ArrayList<>();
+        ArrayList<Integer> newIndices = new ArrayList<>();
+
+        Point2D prev = null;
+        int index = 0;
+
+        for (Point2D p : userDefinedPoints) {
+
+            if (index >= 1 && selectionFlags.get(index - 1) && selectionFlags.get(index)) {
+                // Both points selected, must insert new point inbetween
+                double newX = (p.getX() + prev.getX()) / 2;
+                double newY = (p.getY() + prev.getY()) / 2;
+                Point2D newPoint = new Point2D.Double(newX, newY);
+                newPoints.add(newPoint);
+                newIndices.add(index);
+            }
+
+            prev = p;
+            index++;
+        }
+
+        // Reinsert all new points
+        for (int addedIndex = newPoints.size() - 1; addedIndex >= 0; addedIndex--) {
+            int rank = newIndices.get(addedIndex);
+            Point2D p = newPoints.get(addedIndex);
+            userDefinedPoints.add(rank, p);
+            selectionFlags.add(rank, true);
+        }
+
+        repaint();
+        System.out.println("Subdivision done;");
+    }
+
 }
