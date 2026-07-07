@@ -1,19 +1,13 @@
 package complexfourier;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JSlider;
-import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -26,8 +20,7 @@ public class GUI extends JFrame implements CustomListener {
     private GraphicPanel panel;
     private CircleTower tower;
 
-    private ArrayList<JTextField> textFieldsList;
-    private JPanel coefficientsPanel;
+    private JSlider lodSlider;
 
     public GUI() {
         super();
@@ -52,15 +45,14 @@ public class GUI extends JFrame implements CustomListener {
         JButton computeButton = new JButton("Compute");
         computeButton.addActionListener((e) -> {
             System.out.println("compute");
-            tower.setNbCircles(panel.getNbPoints());
-            initializeTextFields();
+            final int nbPoints = panel.getNbPoints();
+            tower.setNbCircles(nbPoints);
+            lodSlider.setMaximum(nbPoints);
+            lodSlider.setValue(nbPoints);
             panel.compute();
             revalidate();
         });
         buttonsPanel.add(computeButton);
-
-        coefficientsPanel = new JPanel();
-        coefficientsPanel.setLayout(new GridBagLayout());
 
         JButton resetViewButton = new JButton("Reset view");
         resetViewButton.addActionListener((e) -> {
@@ -69,7 +61,6 @@ public class GUI extends JFrame implements CustomListener {
         buttonsPanel.add(resetViewButton);
 
         tower.setNbCircles(panel.getNbPoints());
-        initializeTextFields();
 
         JButton savePointsButton = new JButton("Save Points");
         savePointsButton.addActionListener((e) -> {
@@ -84,21 +75,38 @@ public class GUI extends JFrame implements CustomListener {
 
         topPanel.add(buttonsPanel, BorderLayout.NORTH);
 
-        JSlider slider = new JSlider(JSlider.HORIZONTAL, 0, 1000, 0);
-        slider.addChangeListener(new ChangeListener() {
+        JPanel sliderPanel = new JPanel();
+        sliderPanel.setLayout(new BorderLayout());
+        JLabel drawProgressionLabel = new JLabel("Draw progression");
+        JSlider progressionSlider = new JSlider(JSlider.HORIZONTAL, 0, 1000, 0);
+        progressionSlider.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                panel.setTime(((double) slider.getValue()) / 1000);
+                panel.setTime(((double) progressionSlider.getValue()) / 1000);
             }
         });
-        topPanel.add(slider, BorderLayout.SOUTH);
+        sliderPanel.add(drawProgressionLabel, BorderLayout.WEST);
+        sliderPanel.add(progressionSlider, BorderLayout.CENTER);
+        topPanel.add(sliderPanel, BorderLayout.CENTER);
+
+        JPanel lodPanel = new JPanel();
+        lodPanel.setLayout(new BorderLayout());
+        JLabel lodLabel = new JLabel("Level of detail");
+        lodSlider = new JSlider(0, 100);
+        tower.setLOD(199);
+        lodSlider.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                tower.setLOD(lodSlider.getValue());
+                panel.repaint();
+            }
+        });
+        lodPanel.add(lodLabel, BorderLayout.WEST);
+        lodPanel.add(lodSlider, BorderLayout.CENTER);
+
+        topPanel.add(lodPanel, BorderLayout.SOUTH);
         this.add(topPanel, BorderLayout.NORTH);
 
-        JScrollPane coefficientsScrollPane = new JScrollPane(coefficientsPanel,
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        coefficientsScrollPane.setPreferredSize(new Dimension(200, 200));
-        this.add(coefficientsScrollPane, BorderLayout.SOUTH);
         this.add(panel, BorderLayout.CENTER);
 
         this.setVisible(true);
@@ -106,52 +114,8 @@ public class GUI extends JFrame implements CustomListener {
         this.pack();
     }
 
-    private void initializeTextFields() {
-
-        textFieldsList = new ArrayList<>();
-        int nbRows = tower.getSize();
-        coefficientsPanel.removeAll();
-
-        // Indices column:
-        for (int rank = 0; rank < nbRows; rank++) {
-            JLabel label = new JLabel("" + (rank - nbRows / 2));
-            label.setPreferredSize(new Dimension(15, 20));
-            GridBagConstraints c1 = new GridBagConstraints();
-            c1.gridx = 0;
-            c1.gridwidth = 1;
-            c1.gridy = rank;
-            coefficientsPanel.add(label, c1);
-
-            // Values column
-            JTextField field = new CustomTextField(panel);
-            field.setPreferredSize(new Dimension(200, 20));
-            GridBagConstraints c2 = new GridBagConstraints();
-            c2.gridx = 1;
-            c2.gridwidth = 1;
-            c2.gridy = rank;
-            coefficientsPanel.add(field, c2);
-            textFieldsList.add(field);
-
-            JTextField field2 = new CustomTextField(panel);
-            field2.setPreferredSize(new Dimension(200, 20));
-            GridBagConstraints c3 = new GridBagConstraints();
-            c3.gridx = 2;
-            c3.gridwidth = 1;
-            c3.gridy = rank;
-            coefficientsPanel.add(field2, c3);
-            textFieldsList.add(field2);
-        }
-    }
-
     @Override
     public void update() {
-        // Set the text fields from the values of the tower
-        for (int rank = 0; rank < tower.getSize(); rank++) {
-            double radius = tower.getRadius(rank);
-            double argument = tower.getArgument(rank);
-            textFieldsList.get(2 * rank).setText(radius + "");
-            textFieldsList.get(2 * rank + 1).setText(argument + "");
-        }
     }
 
     private void savePoints() {
