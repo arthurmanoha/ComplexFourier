@@ -3,9 +3,6 @@ package complexfourier;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Point;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -18,7 +15,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import java.util.ArrayList;
+import java.util.Iterator;
 import javax.swing.JPanel;
 
 /**
@@ -28,15 +28,25 @@ import javax.swing.JPanel;
 public class GraphicPanel extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener {
 
     private ArrayList<Point2D> userDefinedPoints;
+    private ArrayList<Boolean> selectionFlags;
     int width, height;
     private CircleTower tower;
 
     private int x0, y0;
     double zoom;
     private boolean isMouseWheelPressed;
+    private double xClickReal, yClickReal;
     private int xMouse, yMouse;
 
     private String filename = "saved_points.txt";
+
+    public enum GraphicPanelMode {
+        DRAW,
+        SELECT
+    }
+    private GraphicPanelMode currentMode;
+    private double xClickApp, yClickApp;
+    private boolean isSelecting;
 
     public GraphicPanel() {
         this(null);
@@ -50,12 +60,20 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
 
         setPreferredSize(new Dimension(width, height));
         userDefinedPoints = new ArrayList<>();
+        selectionFlags = new ArrayList<>();
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
         this.addMouseWheelListener(this);
         tower = newTower;
         resetView();
         isMouseWheelPressed = false;
+        currentMode = GraphicPanelMode.DRAW;
+        isSelecting = false;
+    }
+
+    public void addPoint(Point2D p) {
+        userDefinedPoints.add(p);
+        selectionFlags.add(false);
     }
 
     protected void savePoints() throws IOException {
@@ -69,6 +87,7 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
 
     protected void loadPoints() throws FileNotFoundException, IOException {
         userDefinedPoints.clear();
+        selectionFlags.clear();
         BufferedReader reader = new BufferedReader(new FileReader(filename));
         String line;
         while ((line = reader.readLine()) != null) {
@@ -76,6 +95,7 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
             double newX = new Double(words[0]);
             double newY = new Double(words[1]);
             userDefinedPoints.add(new Point2D.Double(newX, newY));
+            selectionFlags.add(false);
         }
         repaint();
     }
@@ -115,24 +135,51 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
         Point2D prev = null;
         int userPointIndex = 0;
         for (Point2D p : userDefinedPoints) {
-            g.setColor(Color.red);
-            g.fillOval((int) (x0 + p.getX() * zoom - radius), (int) (y0 - p.getY() * zoom - radius), 2 * radius, 2 * radius);
-            if (prev != null) {
-                g.setColor(Color.black);
-                g.drawLine((int) (x0 + p.getX() * zoom), (int) (y0 - p.getY() * zoom),
-                        (int) (x0 + prev.getX() * zoom), (int) (y0 - prev.getY() * zoom));
+            try {
+                if (selectionFlags.get(userPointIndex)) {
+                    int outerRadius = 2 * radius;
+                    g.setColor(Color.blue.brighter());
+                    g.fillOval((int) (x0 + p.getX() * zoom - outerRadius),
+                            (int) (y0 - p.getY() * zoom - outerRadius),
+                            2 * outerRadius,
+                            2 * outerRadius);
+                }
+
+                g.setColor(Color.red);
+                g.fillOval((int) (x0 + p.getX() * zoom - radius),
+                        (int) (y0 - p.getY() * zoom - radius),
+                        2 * radius,
+                        2 * radius);
+                if (prev != null) {
+                    g.setColor(Color.black);
+                    g.drawLine((int) (x0 + p.getX() * zoom), (int) (y0 - p.getY() * zoom),
+                            (int) (x0 + prev.getX() * zoom), (int) (y0 - prev.getY() * zoom));
+                }
+                g.drawString("P" + userPointIndex,
+                        (int) (x0 + p.getX() * zoom),
+                        (int) (y0 - p.getY() * zoom));
+                prev = p;
+                userPointIndex++;
+            } catch (IndexOutOfBoundsException e) {
+                // No point in list
             }
-            g.drawString("P" + userPointIndex,
-                    (int) (x0 + p.getX() * zoom),
-                    (int) (y0 - p.getY() * zoom));
-            prev = p;
-            userPointIndex++;
         }
         tower.paint(g, x0, y0, zoom);
+
+        if (isSelecting) {
+
+            int xMin = (int) min(xClickApp, xMouse);
+            int xMax = (int) max(xClickApp, xMouse);
+            int yMin = (int) min(yClickApp, yMouse);
+            int yMax = (int) max(yClickApp, yMouse);
+
+            g.setColor(Color.blue);
+            g.drawRect(xMin, yMin, xMax - xMin, yMax - yMin);
+        }
     }
 
     public void receiveClick(double xClick, double yClick) {
-        userDefinedPoints.add(new Point2D.Double(xClick, yClick));
+        addPoint(new Point2D.Double(xClick, yClick));
         repaint();
     }
 
@@ -147,16 +194,23 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
     @Override
     public void mousePressed(MouseEvent e) {
         if (e.getButton() == MouseEvent.BUTTON2) {
-            // Mouse click
+            // Mouse wheel click
             isMouseWheelPressed = true;
             xMouse = e.getX();
             yMouse = e.getY();
-        } else {
-
-            double xClickReal = (e.getX() - x0) / zoom;
-            double yClickReal = (y0 - e.getY()) / zoom;
-
-            receiveClick(xClickReal, yClickReal);
+        } else if (e.getButton() == MouseEvent.BUTTON1) {
+            // Left button
+            xMouse = e.getX();
+            yMouse = e.getY();
+            xClickApp = xMouse;
+            yClickApp = yMouse;
+            xClickReal = (e.getX() - x0) / zoom;
+            yClickReal = (y0 - e.getY()) / zoom;
+            if (currentMode.equals(GraphicPanelMode.DRAW)) {
+                receiveClick(xClickReal, yClickReal);
+            } else {
+                isSelecting = true;
+            }
         }
     }
 
@@ -165,7 +219,15 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
         if (e.getButton() == MouseEvent.BUTTON2) {
             // Mouse click
             isMouseWheelPressed = false;
+        } else if (e.getButton() == MouseEvent.BUTTON1) {
+            double xReleaseReal = (e.getX() - x0) / zoom;
+            double yReleaseReal = (y0 - e.getY()) / zoom;
+
+            selectPoints(xClickReal, yClickReal, xReleaseReal, yReleaseReal);
+
+            isSelecting = false;
         }
+        repaint();
     }
 
     @Override
@@ -178,17 +240,22 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
 
     @Override
     public void mouseDragged(MouseEvent e) {
+
+        int dx = e.getX() - xMouse;
+        int dy = e.getY() - yMouse;
+        xMouse = e.getX();
+        yMouse = e.getY();
+
         if (isMouseWheelPressed) {
-            int dx = e.getX() - xMouse;
-            int dy = e.getY() - yMouse;
 
             x0 += dx;
             y0 += dy;
 
-            xMouse = e.getX();
-            yMouse = e.getY();
             tower.drag(dx, dy);
 
+            repaint();
+        }
+        if (isSelecting) {
             repaint();
         }
     }
@@ -239,10 +306,56 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
         repaint();
     }
 
-    public void resetView() {
+    public final void resetView() {
         x0 = width / 2;
         y0 = height / 2;
         zoom = 50;
         repaint();
+    }
+
+    protected void setMode(GraphicPanelMode newMode) {
+        this.currentMode = newMode;
+    }
+
+    // Flag all points within the specified coordinates as selected, and the other points as non-selected.
+    private void selectPoints(double xA, double yA, double xB, double yB) {
+        int index = 0;
+        try {
+            for (Point2D p : userDefinedPoints) {
+                selectionFlags.set(index, pointIsInSelection(p, xA, yA, xB, yB));
+                index++;
+            }
+        } catch (IndexOutOfBoundsException e) {
+            // No point in list
+        }
+    }
+
+    private boolean pointIsInSelection(Point2D p, double xA, double yA, double xB, double yB) {
+        double xMin = Math.min(xA, xB);
+        double xMax = Math.max(xA, xB);
+        double yMin = Math.min(yA, yB);
+        double yMax = Math.max(yA, yB);
+
+        return p.getX() >= xMin && p.getX() <= xMax && p.getY() >= yMin && p.getY() <= yMax;
+    }
+
+    protected void deleteSelected() {
+        Iterator<Point2D> iter = userDefinedPoints.iterator();
+        int index = 0;
+        while (iter.hasNext()) {
+            Point2D p = iter.next();
+            if (selectionFlags.get(index)) {
+                // Delete point
+                iter.remove();
+            }
+            index++;
+        }
+        unselectEverything();
+    }
+
+    private void unselectEverything() {
+        for (int index = 0; index < selectionFlags.size(); index++) {
+            selectionFlags.set(index, false);
+        }
     }
 }
