@@ -223,7 +223,9 @@ public class GraphicPanel extends JPanel implements MouseListener, MouseMotionLi
             double xReleaseReal = (e.getX() - x0) / zoom;
             double yReleaseReal = (y0 - e.getY()) / zoom;
 
-            selectPoints(xClickReal, yClickReal, xReleaseReal, yReleaseReal);
+            if (currentMode.equals(GraphicPanelMode.SELECT)) {
+                selectPoints(xClickReal, yClickReal, xReleaseReal, yReleaseReal);
+            }
 
             isSelecting = false;
         }
