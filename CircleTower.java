@@ -28,6 +28,8 @@ public class CircleTower {
 
     private ArrayList<CustomListener> listeners;
 
+    private int levelOfDetail;
+
     public CircleTower() {
         xTab = new ArrayList<>(initSize);
         yTab = new ArrayList<>(initSize);
@@ -36,6 +38,7 @@ public class CircleTower {
         time = 0;
         reconstructedPoints = new ArrayList<>();
         listeners = new ArrayList<>();
+        levelOfDetail = 0;
     }
 
     public void updateCoefficient(int circleIndex, boolean isRealPart, double value) {
@@ -72,38 +75,36 @@ public class CircleTower {
 
                 int rank = nbSteps / 2 + (step % 2 != 0 ? ((step + 1) / 2) : (-(step + 1) / 2));
                 int frequency = (step + 1) / 2 * (step % 2 == 0 ? -1 : 1);
+                if (Math.abs(frequency) <= levelOfDetail) {
 
-                Complex number = complexValues.get(rank);
-                double radiusApp = number.getRadius() * zoom;
-                double startAngle = number.getArgument();
+                    Complex number = complexValues.get(rank);
+                    double radiusApp = number.getRadius() * zoom;
+                    double startAngle = number.getArgument();
 
-                if (frequency > 0) {
-                    g.setColor(Color.red);
-                } else if (frequency < 0) {
-                    g.setColor(Color.blue);
-                } else {
-                    g.setColor(Color.white);
+                    if (frequency > 0) {
+                        g.setColor(Color.red);
+                    } else if (frequency < 0) {
+                        g.setColor(Color.blue);
+                    } else {
+                        g.setColor(Color.white);
+                    }
+
+                    // Draw a radius of the circle
+                    double currentAngle = startAngle + frequency * time * 2 * Math.PI;
+                    xPoint = xPointPrev + (radiusApp * Math.cos(currentAngle));
+                    yPoint = yPointPrev - (radiusApp * Math.sin(currentAngle));
+                    if (radiusApp > 0.01) {
+                    }
+                    g.drawLine((int) xPointPrev, (int) yPointPrev, (int) xPoint, (int) yPoint);
+                    g.drawString("f=" + frequency, (int) (xPointPrev + xPoint) / 2, (int) (yPointPrev + yPoint) / 2);
+
+                    g.setColor(Color.black);
+                    int radius = 5;
+                    g.fillOval((int) (xPoint - radius), (int) (yPoint - radius), 2 * radius, 2 * radius);
+
+                    xPointPrev = xPoint;
+                    yPointPrev = yPoint;
                 }
-
-//            // Draw the full circle
-//            int xAppCircle = (int) (xAppPrev - radius);
-//            int yAppCircle = (int) (y0 - yAppPrev - radius);
-//            g.drawOval(xAppCircle, yAppCircle, (int) radius * 2, (int) radius * 2);
-                // Draw a radius of the circle
-                double currentAngle = startAngle + frequency * time * 2 * Math.PI;
-                xPoint = xPointPrev + (radiusApp * Math.cos(currentAngle));
-                yPoint = yPointPrev - (radiusApp * Math.sin(currentAngle));
-                if (radiusApp > 0.01) {
-                }
-                g.drawLine((int) xPointPrev, (int) yPointPrev, (int) xPoint, (int) yPoint);
-                g.drawString("f=" + frequency, (int) (xPointPrev + xPoint) / 2, (int) (yPointPrev + yPoint) / 2);
-
-                g.setColor(Color.black);
-                int radius = 5;
-                g.fillOval((int) (xPoint - radius), (int) (yPoint - radius), 2 * radius, 2 * radius);
-
-                xPointPrev = xPoint;
-                yPointPrev = yPoint;
             } catch (IndexOutOfBoundsException e) {
                 System.out.println("                                Not enough points for step = " + step);
             }
@@ -137,13 +138,9 @@ public class CircleTower {
         int lowerBound = -initSize + 1;
         int upperBound = initSize - 1;
 
-//        System.out.println("initSize: " + initSize);
-//        System.out.println("Bounds: " + lowerBound + ", " + upperBound);
         complexValues.clear();
         for (int n = lowerBound; n <= upperBound; n++) { // n in [-n/2; n/2]
-//            System.out.println("    n=" + n);
             Complex cn = computeCoef(n, userDefinedPoints);
-//            complexValues.set(n - lowerBound, cn);
             complexValues.add(n - lowerBound, cn);
         }
         updateListeners();
@@ -163,17 +160,13 @@ public class CircleTower {
             fOfT.setCartesianValue(userPoint.getX(), userPoint.getY());
 
             // e(-n.2pi.i.t)
-//            System.out.println("        argument: " + (-n * 2.0 * t / N) + " * PI");
             Complex exponent = new Complex(1, -n * 2.0 * PI * t / N);
-//            System.out.println("        (" + n + ", " + t + ") exponent: " + exponent);
 
             Complex increment = fOfT.mult(exponent);
 
             cn = cn.add(increment);
-//            System.out.println("        cn: " + cn);
         }
         cn = cn.mult(1 / (double) N);
-        System.out.println((n >= 0 ? " " : "") + "    C" + n + ": " + cn);
 
         return cn;
     }
@@ -227,5 +220,15 @@ public class CircleTower {
             p.x += dx;
             p.y += dy;
         }
+    }
+
+    /**
+     * Set how many harmonics we want to use for the redraw.
+     *
+     * @param value
+     */
+    protected void setLOD(int value) {
+        levelOfDetail = value;
+        System.out.println("Set level of detail to " + levelOfDetail);
     }
 }
